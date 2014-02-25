@@ -1,0 +1,101 @@
+fs = require 'fs'
+mime = require 'mime'
+_ = require 'lodash'
+Q = require 'q'
+glob = require 'glob'
+path = require 'path'
+
+class S3Deployer
+  # packageJson: Object of this project's package.json
+  # client: knox-compatible client.
+  # options:
+  #   dryrun: if upload should be done
+  #   chunk: how many files to upload in parallel. Defaults to 20.
+  #   batchTimeout: timeout for entire upload. millis. Defaults to 1000 * 60 * 5.
+  #   fileTimeout: timeout for upload of each file. millis. Defaults to 1000 * 30.
+  constructor: (@packageJson, @client, @options = {}) ->
+    @packageName = @packageJson.name
+    @deployDirectory = @packageJson.deploy
+
+  # Deploy every file under @deployDirectory to bucket/@packageName/
+  deploy: =>
+    fileArray = @prepareFileArray()
+    @batchUploadFileArray(fileArray, @options.chunk, @options.batchTimeout)
+
+  # Returns an array with one object of the following type for each file in @deployDirectory:
+  # { src: 'deploy/myfile', dest: 'package/myfile' }
+  prepareFileArray: =>
+    files = glob.sync("**", {mark: true, cwd: @deployDirectory}) # find all files and dirs
+    files = _.reject files, (f) -> f.charAt(f.length-1) is '/' # remove dirs
+    _.map files, (f) => {src: path.join(@deployDirectory, f), dest: @packageName + '/' + f}
+
+  # Uploads file at src to dest using @client. Expects a knox-like client.
+  upload: (src, dest) =>
+    throw new Error("Paremeter src is required") unless src
+    throw new Error("Paremeter dest is required") unless dest
+    console.log "Uploading file #{src} to #{dest}" if @options.verbose
+    return Q() if @options.dryrun
+
+    deferred = Q.defer()
+    data = fs.readFileSync(src)
+    req = @client.put dest,
+      "Content-Length": data.length
+      "Content-Type": mime.lookup(dest)
+
+    # Let's not wait for more than timeout seconds to fail the build if there is no response to the upload request
+    timeoutMillis = @options.fileTimeout or 1000 * 30
+    timeoutCallback = ->
+      req.abort()
+      deferred.reject new Error("Timeout exceeded when uploading #{dest}")
+
+    req.setTimeout timeoutMillis, timeoutCallback
+
+    req.on "error", (err) ->
+      deferred.reject new Error(err)
+
+    req.on "response", (res) ->
+      if 200 is res.statusCode
+        deferred.resolve()
+      else
+        deferred.reject new Error("Failed to upload #{dest}, status: #{res.statusCode}")
+
+    req.end data
+    return deferred.promise
+
+  # Uploads every file in fileArray in parallel, chunk by chunk.
+  batchUploadFileArray: (fileArray, chunk = 20, timeout = 1000 * 60 * 5) =>
+    console.log 'Starting deploy, chunk:', chunk, 'timeout:', timeout if @options.verbose
+    deferred = Q.defer() # We make our own deferred to be able to notify progress
+    upload = Q()
+    # If the upload takes longer than 5 minutes, break the build.
+    timeoutCallback = -> throw new Error("Timeout exceeded when uploading files")
+    timeoutKey = setTimeout timeoutCallback, timeout
+    for index in [0..fileArray.length] by chunk
+      console.log 'Batch', index if @options.verbose
+      fileArrayBatch = fileArray.slice(index, index + chunk)
+
+      # Returns a callback to start the next batch
+      startNextBatchUpload = do (fileArrayBatch, index) =>
+        =>
+          # Creates a promise for the upload of each file in this batch and notifies upon progress
+          fileArrayBatchPromises = _.map fileArrayBatch, (file, i) => @upload(file.src, file.dest).then => deferred.notify "[#{String('000'+ (index + i + 1)).slice(-3)}/#{String('000'+ (index + fileArrayBatch.length)).slice(-3)}] https://#{@client.bucket}.s3.amazonaws.com/#{file.dest}"
+
+          # Return a promise that only resolves when all files in this batch are uploaded
+          return Q.all(fileArrayBatchPromises)
+
+      # At the end of each batch, trigger the next batch
+      upload = upload.then startNextBatchUpload
+
+    console.log 'End batches division' if @options.verbose
+
+    # At the end of the last batch, clear the timeout and resolve the deferred
+    upload.then ->
+      clearTimeout(timeoutKey)
+      deferred.resolve(upload)
+
+    upload.fail (reason) ->
+      deferred.reject(reason)
+
+    return deferred.promise
+
+module.exports = S3Deployer
