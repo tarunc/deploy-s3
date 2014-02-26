@@ -5,8 +5,8 @@
   "main": "libs/s3-deployer.js",
   "deploy": "test/deploy",
   "scripts": {
-    "test": "mocha --compilers coffee:coffee-script/register",
-    "testwatch": "mocha --compilers coffee:coffee-script/register -w",
+    "test": "mocha --compilers coffee:coffee-script/register --reporter spec",
+    "testwatch": "mocha --compilers coffee:coffee-script/register --reporter spec -w",
     "prepublish": "coffee -c libs/"
   },
   "repository": {
