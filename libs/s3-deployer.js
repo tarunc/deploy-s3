@@ -132,7 +132,7 @@
       }), timeout);
       upload.then(function() {
         clearTimeout(timeoutKey);
-        return deferred.resolve(upload);
+        return deferred.resolve();
       });
       upload.fail(function(reason) {
         return deferred.reject(reason);
