@@ -40,27 +40,27 @@ createClient = (statusCode, expectedArray) ->
 
   return client
 
-describe 'VTEX Deploy S3', ->
+describe 'Deploy S3', ->
   it 'should prepare files array properly', (done) ->
     deployer = new S3Deployer(pkg)
     fileSrcDestArray = deployer.prepareFileArray()
     fileSrcDestArray.length.should.equal 2
     fileSrcDestArray[0].src.should.equal 'test/deploy/bar/foo'
-    fileSrcDestArray[0].dest.should.equal 'vtex-deploy-s3/bar/foo'
+    fileSrcDestArray[0].dest.should.equal 'deploy-s3/bar/foo'
     fileSrcDestArray[1].src.should.equal 'test/deploy/foo'
-    fileSrcDestArray[1].dest.should.equal 'vtex-deploy-s3/foo'
+    fileSrcDestArray[1].dest.should.equal 'deploy-s3/foo'
     done()
 
   it 'should upload one file succesfuly', (done) ->
     expected =
-      dest: 'vtex-deploy-s3/bar/foo'
+      dest: 'deploy-s3/bar/foo'
       length: 7
       type: 'application/octet-stream'
       data: 'bar/foo'
     client = createClient(200, [expected])
 
     deployer = new S3Deployer(pkg, client)
-    deployer.upload('test/deploy/bar/foo', 'vtex-deploy-s3/bar/foo').then ->
+    deployer.upload('test/deploy/bar/foo', 'deploy-s3/bar/foo').then ->
       expected.setTimeoutCalled.should.be.ok
       expected.onErrorCalled.should.be.ok
       expected.endCalled.should.be.ok
@@ -69,14 +69,14 @@ describe 'VTEX Deploy S3', ->
   it 'should throw when failing upload', (done) ->
     thenCalled = false
     expected =
-      dest: 'vtex-deploy-s3/bar/foo'
+      dest: 'deploy-s3/bar/foo'
       length: 7
       type: 'application/octet-stream'
       data: 'bar/foo'
     client = createClient(401, [expected])
 
     deployer = new S3Deployer(pkg, client)
-    deployer.upload('test/deploy/bar/foo', 'vtex-deploy-s3/bar/foo').then ->
+    deployer.upload('test/deploy/bar/foo', 'deploy-s3/bar/foo').then ->
       thenCalled = true
     .fail ->
       thenCalled.should.be.not.ok
@@ -87,12 +87,12 @@ describe 'VTEX Deploy S3', ->
 
   it 'should upload files under given directory to s3/package/', (done) ->
     expectedFirst =
-      dest: 'vtex-deploy-s3/bar/foo'
+      dest: 'deploy-s3/bar/foo'
       length: 7
       type: 'application/octet-stream'
       data: 'bar/foo'
     expectedSecond =
-      dest: 'vtex-deploy-s3/foo'
+      dest: 'deploy-s3/foo'
       length: 3
       type: 'application/octet-stream'
       data: 'foo'

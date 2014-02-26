@@ -1,4 +1,4 @@
-# VTEX S3 Deploy
+# Deploy S3
 
 Usage:
 

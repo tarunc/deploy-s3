@@ -1,5 +1,5 @@
 {
-  "name": "vtex-deploy-s3",
+  "name": "deploy-s3",
   "version": "0.1.0",
   "description": "Deploy front end apps to S3",
   "main": "libs/deploy-s3.js",
@@ -7,7 +7,8 @@
   "deploy": "test/deploy",
   "scripts": {
     "test": "mocha --compilers coffee:coffee-script/register",
-    "testwatch": "mocha --compilers coffee:coffee-script/register -w"
+    "testwatch": "mocha --compilers coffee:coffee-script/register -w",
+    "prepublish": "coffee -c libs/"
   },
   "repository": {
     "type": "git",

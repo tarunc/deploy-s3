@@ -19,6 +19,7 @@ class S3Deployer
 
   # Deploy every file under @deployDirectory to bucket/@packageName/
   deploy: =>
+    console.log "Running in dry run" if @options.dryrun
     fileArray = @prepareFileArray()
     @batchUploadFileArray(fileArray, @options.chunk, @options.batchTimeout)
 
@@ -65,29 +66,26 @@ class S3Deployer
   # Uploads every file in fileArray in parallel, chunk by chunk.
   batchUploadFileArray: (fileArray, chunk = 20, timeout = 1000 * 60 * 5) =>
     console.log 'Starting deploy, chunk:', chunk, 'timeout:', timeout if @options.verbose
-    deferred = Q.defer() # We make our own deferred to be able to notify progress
-    upload = Q()
-    # If the upload takes longer than 5 minutes, break the build.
-    timeoutCallback = -> throw new Error("Timeout exceeded when uploading files")
-    timeoutKey = setTimeout timeoutCallback, timeout
-    for index in [0..fileArray.length] by chunk
-      console.log 'Batch', index if @options.verbose
-      fileArrayBatch = fileArray.slice(index, index + chunk)
-
-      # Returns a callback to start the next batch
-      startNextBatchUpload = do (fileArrayBatch, index) =>
-        =>
+    deferred = Q.defer() # We make our own deferred in order to be able to notify progress
+    upload = Q() # Create initial promise for upload
+    # Create multiple batches, each with at most `chunk` number of files
+    batches = []
+    batches.push fileArray.slice(index, index + chunk) for index in [0..fileArray.length] by chunk
+    batches.forEach (fileArrayBatch, batchIndex) =>
+      console.log 'Batch', batchIndex if @options.verbose
+      # Start uploading the next batch when this one is finished
+      upload = upload.then =>
           # Creates a promise for the upload of each file in this batch and notifies upon progress
-          fileArrayBatchPromises = _.map fileArrayBatch, (file, i) => @upload(file.src, file.dest).then => deferred.notify "[#{String('000'+ (index + i + 1)).slice(-3)}/#{String('000'+ (index + fileArrayBatch.length)).slice(-3)}] https://#{@client.bucket}.s3.amazonaws.com/#{file.dest}"
-
           # Return a promise that only resolves when all files in this batch are uploaded
-          return Q.all(fileArrayBatchPromises)
+          Q.all _.map fileArrayBatch, (file, i) =>
+            @upload(file.src, file.dest).then =>
+              deferred.notify "[" +
+                String('000'+ (batchIndex + i + 1)).slice(-3) + "/" +
+                String('000'+ (batchIndex + fileArrayBatch.length)).slice(-3) + "]" +
+                " https://#{@client.bucket}.s3.amazonaws.com/#{file.dest}"
 
-      # At the end of each batch, trigger the next batch
-      upload = upload.then startNextBatchUpload
-
-    console.log 'End batches division' if @options.verbose
-
+    # Set a timeout for failure
+    timeoutKey = setTimeout (-> throw new Error("Timeout exceeded when uploading files")), timeout
     # At the end of the last batch, clear the timeout and resolve the deferred
     upload.then ->
       clearTimeout(timeoutKey)
