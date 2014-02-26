@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "description": "Deploy front end apps to S3",
   "main": "libs/deploy-s3.js",
-  "bin": "bin/deploy-s3.js",
   "deploy": "test/deploy",
   "scripts": {
     "test": "mocha --compilers coffee:coffee-script/register",
