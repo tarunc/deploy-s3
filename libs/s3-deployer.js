@@ -121,7 +121,7 @@
           return upload = upload.then(function() {
             return Q.all(_.map(fileArrayBatch, function(file, i) {
               return _this.upload(file.src, file.dest).then(function() {
-                return deferred.notify("[" + String('000' + (batchIndex + i + 1)).slice(-3) + "/" + String('000' + (batchIndex + fileArrayBatch.length)).slice(-3) + "]" + (" https://" + _this.client.bucket + ".s3.amazonaws.com/" + file.dest));
+                return deferred.notify("[" + String('000' + ((batchIndex * chunk) + i + 1)).slice(-3) + "/" + String('000' + ((batchIndex * chunk) + fileArrayBatch.length)).slice(-3) + "]" + (" https://" + _this.client.bucket + ".s3.amazonaws.com/" + file.dest));
               });
             }));
           });

@@ -80,8 +80,8 @@ class S3Deployer
           Q.all _.map fileArrayBatch, (file, i) =>
             @upload(file.src, file.dest).then =>
               deferred.notify "[" +
-                String('000'+ (batchIndex + i + 1)).slice(-3) + "/" +
-                String('000'+ (batchIndex + fileArrayBatch.length)).slice(-3) + "]" +
+                String('000'+ ((batchIndex*chunk) + i + 1)).slice(-3) + "/" +
+                String('000'+ ((batchIndex*chunk) + fileArrayBatch.length)).slice(-3) + "]" +
                 " https://#{@client.bucket}.s3.amazonaws.com/#{file.dest}"
 
     # Set a timeout for failure
