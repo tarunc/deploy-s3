@@ -9,7 +9,7 @@ class S3Deployer
   # packageJson: Object of this project's package.json
   # client: knox-compatible client.
   # options:
-  #   dryrun: if upload should be done
+  #   dryrun: if upload should be skipped. Defaults to false.
   #   chunk: how many files to upload in parallel. Defaults to 20.
   #   batchTimeout: timeout for entire upload. millis. Defaults to 1000 * 60 * 5.
   #   fileTimeout: timeout for upload of each file. millis. Defaults to 1000 * 30.
