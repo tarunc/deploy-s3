@@ -89,7 +89,7 @@ class S3Deployer
     # At the end of the last batch, clear the timeout and resolve the deferred
     upload.then ->
       clearTimeout(timeoutKey)
-      deferred.resolve(upload)
+      deferred.resolve()
 
     upload.fail (reason) ->
       deferred.reject(reason)
