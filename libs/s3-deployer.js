@@ -86,11 +86,20 @@
         return deferred.reject(new Error(err));
       });
       req.on("response", function(res) {
-        if (200 === res.statusCode) {
-          return deferred.resolve();
-        } else {
-          return deferred.reject(new Error("Failed to upload " + dest + ", status: " + res.statusCode));
-        }
+        data = "";
+        res.on('data', function(chunk) {
+          return data += chunk;
+        });
+        return res.on('end', function(chunk) {
+          if (chunk) {
+            data += chunk;
+          }
+          if (200 === res.statusCode) {
+            return deferred.resolve(data);
+          } else {
+            return deferred.reject(new Error("Failed to upload " + dest + ", status: " + res.statusCode + ", \n " + data));
+          }
+        });
       });
       req.end(data);
       return deferred.promise;

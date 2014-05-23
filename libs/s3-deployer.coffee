@@ -55,10 +55,14 @@ class S3Deployer
       deferred.reject new Error(err)
 
     req.on "response", (res) ->
-      if 200 is res.statusCode
-        deferred.resolve()
-      else
-        deferred.reject new Error("Failed to upload #{dest}, status: #{res.statusCode}")
+      data = ""
+      res.on 'data', (chunk) -> data += chunk
+      res.on 'end', (chunk) ->
+        data += chunk if chunk
+        if 200 is res.statusCode
+          deferred.resolve(data)
+        else
+          deferred.reject new Error("Failed to upload #{dest}, status: #{res.statusCode}, \n #{data}")
 
     req.end data
     return deferred.promise
