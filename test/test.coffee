@@ -32,7 +32,7 @@ createClient = (statusCode, expectedArray) ->
           expected.endCalled = true
           timeoutFunction = (cb) ->
             # returns a function with cb inside closure
-            ->  cb(statusCode: statusCode)
+            ->  cb(statusCode: statusCode, on: (event, cb) -> cb())
           setTimeout timeoutFunction(expected.cb), 100
           expected = expectedArray[++i]
 
