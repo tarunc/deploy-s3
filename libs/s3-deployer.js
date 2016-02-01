@@ -56,7 +56,7 @@
       })(this));
     };
 
-    S3Deployer.prototype.upload = function(src, dest) {
+    S3Deployer.prototype.upload = function(src, dest, headers) {
       var data, deferred, req, timeoutCallback, timeoutMillis;
       if (!src) {
         throw new Error("Paremeter src is required");
@@ -72,10 +72,10 @@
       }
       deferred = Q.defer();
       data = fs.readFileSync(src);
-      req = this.client.put(dest, {
+      req = this.client.put(dest, _.extend({
         "Content-Length": data.length,
         "Content-Type": mime.lookup(dest)
-      });
+      }, (headers && _.isFunction(headers) ? headers(src, dest) : headers) || {}));
       timeoutMillis = this.options.fileTimeout || 1000 * 30;
       timeoutCallback = function() {
         req.abort();
@@ -129,7 +129,7 @@
           }
           return upload = upload.then(function() {
             return Q.all(_.map(fileArrayBatch, function(file, i) {
-              return _this.upload(file.src, file.dest).then(function() {
+              return _this.upload(file.src, file.dest, _this.options.headers).then(function() {
                 return deferred.notify("[" + String('000' + ((batchIndex * chunk) + i + 1)).slice(-3) + "/" + String('000' + ((batchIndex * chunk) + fileArrayBatch.length)).slice(-3) + "]" + (" https://" + _this.client.bucket + ".s3.amazonaws.com/" + file.dest));
               });
             }));
