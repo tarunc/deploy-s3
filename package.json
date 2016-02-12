@@ -1,6 +1,6 @@
 {
   "name": "deploy-s3",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Deploy front end apps to S3",
   "main": "libs/s3-deployer.js",
   "deploy": "test/deploy",
@@ -26,17 +26,17 @@
   },
   "homepage": "https://github.com/vtex/deploy-s3",
   "dependencies": {
-    "commander": "~2.1.0",
-    "q": "~0.9.7",
-    "prompt": "~0.2.12",
-    "semver": "~2.2.1",
-    "glob": "~3.2.8",
-    "mime": "~1.2.11",
-    "lodash": "~2.4.1"
+    "commander": "~2.9.0",
+    "q": "~1.4.1",
+    "prompt": "~1.0.0",
+    "semver": "~5.1.0",
+    "glob": "~7.0.0",
+    "mime": "~1.3.4",
+    "lodash": "~4.3.0"
   },
   "preferGlobal": false,
   "devDependencies": {
-    "should": "~2.1.1",
-    "vinyl-fs": "0.0.2"
+    "should": "~8.2.2",
+    "vinyl-fs": "2.3.1"
   }
 }
